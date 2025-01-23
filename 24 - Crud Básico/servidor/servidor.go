@@ -2,10 +2,12 @@ package servidor
 
 import (
 	"crud/banco"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -35,14 +37,18 @@ func CriarUsuario(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Erro ao conectar no banco de dados"))
 		return
 	}
-	defer db.Close()
 
 	statement, erro := db.Prepare("insert into usuarios (nome, email) values (?, ?)")
 	if erro != nil {
 		w.Write([]byte("Erro ao criar o statement"))
 		return
 	}
-	defer statement.Close()
+	defer func(statement *sql.Stmt) {
+		err := statement.Close()
+		if err != nil {
+			log.Fatal("Erro ao fechar statement:", err)
+		}
+	}(statement)
 
 	insercao, erro := statement.Exec(usuario.Nome, usuario.Email)
 	if erro != nil {
